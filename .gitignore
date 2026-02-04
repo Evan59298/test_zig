@@ -1,0 +1,11 @@
+# Zig
+.zig-cache/
+zig-cache/
+zig-out/
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
