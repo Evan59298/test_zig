@@ -8,7 +8,7 @@ pub fn build(b: *std.Build) void {
         .abi = .eabi,
     });
 
-    const optimize = b.standardOptimizeOption(.{});
+    const optimize: std.builtin.OptimizeMode = .ReleaseSmall;
 
     const root_module = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
@@ -25,4 +25,10 @@ pub fn build(b: *std.Build) void {
     exe.setLinkerScript(b.path("stm32f407.ld"));
 
     b.installArtifact(exe);
+
+    const bin = b.addObjCopy(exe.getEmittedBin(), .{
+        .format = .bin,
+    });
+    const install_bin = b.addInstallFile(bin.getOutput(), "bin/stm32f407-blink.bin");
+    b.getInstallStep().dependOn(&install_bin.step);
 }

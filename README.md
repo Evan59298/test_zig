@@ -8,10 +8,10 @@
 zig build
 ```
 
-To convert the ELF to BIN (optional for J-Link):
+Build also emits a BIN at `zig-out\bin\stm32f407-blink.bin`. If you need to regenerate it manually:
 
 ```powershell
-arm-none-eabi-objcopy -O binary zig-out\bin\stm32f407-blink.elf stm32f407-blink.bin
+arm-none-eabi-objcopy -O binary zig-out\bin\stm32f407-blink.elf zig-out\bin\stm32f407-blink.bin
 ```
 
 ## Flash with J-Link
