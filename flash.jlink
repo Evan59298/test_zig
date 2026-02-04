@@ -2,7 +2,7 @@ if SWD
 speed 4000
 device STM32F407VG
 r
-loadfile zig-out\bin\stm32f407-blink.elf
+loadfile firmware.elf
 r
 g
 q

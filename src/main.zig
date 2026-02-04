@@ -14,44 +14,11 @@ const Peripheral = struct {
     const USART1_CR1: *volatile u32 = @ptrFromInt(0x4001100C);
 };
 
-const ESTACK: u32 = 0x20000000 + 128 * 1024;
-extern const _sidata: u32;
-extern var _sdata: u32;
-extern var _edata: u32;
-extern var _sbss: u32;
-extern var _ebss: u32;
-
-export fn default_handler() callconv(.c) noreturn {
-    while (true) {}
-}
-
-comptime {
-    asm (
-        \\.section .vector_table,"a",%progbits
-        \\.word 0x20020000
-        \\.word reset_handler
-        \\.rept 105
-        \\.word default_handler
-        \\.endr
-        \\.section .text
-    );
-}
-
-export fn reset_handler() callconv(.c) noreturn {
-    var src: *const u32 = &_sidata;
-    var dst: *u32 = &_sdata;
-    while (@intFromPtr(dst) < @intFromPtr(&_edata)) : (dst = @ptrFromInt(@intFromPtr(dst) + 4)) {
-        dst.* = src.*;
-        src = @ptrFromInt(@intFromPtr(src) + 4);
-    }
-
-    var bss: *u32 = &_sbss;
-    while (@intFromPtr(bss) < @intFromPtr(&_ebss)) : (bss = @ptrFromInt(@intFromPtr(bss) + 4)) {
-        bss.* = 0;
-    }
-
-    main();
-}
+var period_ms: u32 = 2000;
+var rx_buf: [64]u8 = undefined;
+var rx_len: usize = 0;
+var duty: u8 = 0;
+var rising: bool = true;
 
 fn delay(cycles: u32) void {
     var i: u32 = 0;
@@ -134,10 +101,10 @@ fn parse_period(line: []const u8) ?u32 {
     return value;
 }
 
-fn pwm_cycle(duty: u8) void {
+fn pwm_cycle(duty_val: u8) void {
     var i: u16 = 0;
     while (i < 255) : (i += 1) {
-        if (i < duty) {
+        if (i < duty_val) {
             Peripheral.GPIOE_ODR.* |= (1 << 5);
         } else {
             Peripheral.GPIOE_ODR.* &= ~(@as(u32, 1) << 5);
@@ -146,28 +113,28 @@ fn pwm_cycle(duty: u8) void {
     }
 }
 
-fn main() noreturn {
-    // Enable GPIOE clock
+fn led_init() void {
     Peripheral.RCC_AHB1ENR.* |= (1 << 4);
-
-    // Set PE5 to output (MODER5 = 01)
     const moder = Peripheral.GPIOE_MODER.*;
     const clear_mask: u32 = ~(@as(u32, 0b11) << (5 * 2));
     const set_mask: u32 = @as(u32, 0b01) << (5 * 2);
     Peripheral.GPIOE_MODER.* = (moder & clear_mask) | set_mask;
+}
 
+export fn zig_blink_init() void {
+    led_init();
     uart_init();
     uart_write_str("STM32F407 Zig Breathing LED\r\n");
     uart_write_str("LED: PE5\r\n");
     uart_write_str("USART1: 115200 8N1 (PA9/PA10)\r\n");
     uart_write_str("Cmd: led period <ms>\r\n");
+}
 
-    var period_ms: u32 = 2000;
-    var rx_buf: [64]u8 = undefined;
-    var rx_len: usize = 0;
-    var duty: u8 = 0;
-    var rising = true;
+export fn zig_blink_set_period(ms: u32) void {
+    if (ms > 0) period_ms = ms;
+}
 
+fn blink_loop() noreturn {
     while (true) {
         const step_ms = @max(1, period_ms / 512);
 
@@ -214,10 +181,14 @@ fn main() noreturn {
     }
 }
 
+export fn zig_blink_run() noreturn {
+    zig_blink_init();
+    blink_loop();
+}
+
 pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
     _ = msg;
     _ = error_return_trace;
     _ = ret_addr;
-    default_handler();
-    unreachable;
+    while (true) {}
 }

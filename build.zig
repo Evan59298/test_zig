@@ -16,19 +16,12 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    const exe = b.addExecutable(.{
-        .name = "stm32f407-blink.elf",
+    const lib = b.addLibrary(.{
+        .name = "zig_blink",
         .root_module = root_module,
+        .linkage = .static,
     });
 
-    exe.entry = .{ .symbol_name = "reset_handler" };
-    exe.setLinkerScript(b.path("stm32f407.ld"));
-
-    b.installArtifact(exe);
-
-    const bin = b.addObjCopy(exe.getEmittedBin(), .{
-        .format = .bin,
-    });
-    const install_bin = b.addInstallFile(bin.getOutput(), "bin/stm32f407-blink.bin");
-    b.getInstallStep().dependOn(&install_bin.step);
+    b.installArtifact(lib);
+    _ = b.addInstallHeaderFile(b.path("include/zig_blink.h"), "zig_blink.h");
 }

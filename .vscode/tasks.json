@@ -1,0 +1,56 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build (C firmware)",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts\\build_c.ps1"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Flash (J-Link)",
+			"type": "shell",
+			"dependsOn": "Build (C firmware)",
+			"command": "C:\\Program Files\\SEGGER\\JLink\\JLink.exe",
+			"args": [
+				"-device",
+				"STM32F407VG",
+				"-if",
+				"SWD",
+				"-speed",
+				"4000",
+				"-autoconnect",
+				"1",
+				"-CommanderScript",
+				"flash.jlink"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Clean",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts\\clean.ps1"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
+}

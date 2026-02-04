@@ -19,7 +19,19 @@ SECTIONS
     *(.rodata*)
   } > FLASH
 
-  .data : AT(ADDR(.text) + SIZEOF(.text))
+  .ARM.extab :
+  {
+    *(.ARM.extab* .gnu.linkonce.armextab.*)
+  } > FLASH
+
+  .ARM.exidx :
+  {
+    __exidx_start = .;
+    *(.ARM.exidx* .gnu.linkonce.armexidx.*)
+    __exidx_end = .;
+  } > FLASH
+
+  .data : AT(ADDR(.ARM.exidx) + SIZEOF(.ARM.exidx))
   {
     _sdata = .;
     *(.data*)

@@ -1,58 +1,47 @@
-# STM32F407 Zig Blink
 
-## Build
+# STM32F407 Zig Blink (Static Library + C Main)
 
-> Requires Zig (0.11+), arm-none-eabi GCC (for objcopy), and J-Link tools.
+## Project Structure
+
+```
+build.zig               # Build Zig static library
+src/main.zig            # Zig library implementation
+include/zig_blink.h     # C API header
+c_src/startup.c         # C startup + vector table
+c_src/main.c            # C main calling Zig library
+stm32f407.ld            # Linker script
+scripts/build_c.ps1     # C build script (uses Zig lib)
+```
+
+## Build (C firmware)
+
+> Requires Zig (0.15+).
 
 ```powershell
-zig build
+scripts\build_c.ps1
 ```
 
-Build also emits a BIN at `zig-out\bin\stm32f407-blink.bin`. If you need to regenerate it manually:
+Outputs:
+- Static library: `zig-out\lib\libzig_blink.a`
+- Header: `zig-out\include\zig_blink.h`
+- Firmware: `firmware.elf`, `firmware.bin`
 
-```powershell
-arm-none-eabi-objcopy -O binary zig-out\bin\stm32f407-blink.elf zig-out\bin\stm32f407-blink.bin
-```
+## C Integration
 
-## Flash with J-Link
+The C entry calls Zig:
 
-### Option A: J-Link Commander
+```c
+#include "zig_blink.h"
 
-```powershell
-JLink.exe -device STM32F407VG -if SWD -speed 4000 -autoconnect 1
-```
-
-In the J-Link console:
-
-```
-r
-loadfile zig-out\bin\stm32f407-blink.elf
-r
-g
-```
-
-### Option B: J-Link command file
-
-Create a file named `flash.jlink` with:
-
-```
-if SWD
-speed 4000
-device STM32F407VG
-r
-loadfile zig-out\bin\stm32f407-blink.elf
-r
-g
-q
-```
-
-Then run:
-
-```powershell
-JLink.exe -CommandFile flash.jlink
+int main(void) {
+		zig_blink_run();
+		while (1) {}
+}
 ```
 
 ## Notes
 
-- Default LED pin: PD12 (GPIOD). On STM32F4-Discovery this is the green LED.
-- If your board uses another pin, update the GPIO register addresses and pin number in `src/main.zig`.
+- LED pin: PE5
+- USART1: 115200 8N1 on PA9/PA10
+- Command: `led period <ms>`
+- If your board uses another pin or clock, update GPIO/clock settings in `src/main.zig`.
